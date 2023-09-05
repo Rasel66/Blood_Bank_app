@@ -39,17 +39,24 @@ const registerController =async (req, res) =>{
 
 const loginController = async(req, res)=>{
     try {
-        const User = await userModel.findOne({ email: req.body.email})
+        const user = await userModel.findOne({ email: req.body.email})
 
-        if(!User) {
+        if(!user) {
             return res.send(404).send({
                 success: false,
                 message: "Invalid credentials"
             })
         }
 
+        if(user.role !== req.body.role) {
+            return res.status(500).send({
+                success: false,
+                message: "Invalid role"
+            })
+        }
+
         //compare password
-        const comparePassword = await bcrypt.compare(req.body.password, User.password)
+        const comparePassword = await bcrypt.compare(req.body.password, user.password)
 
         if(!comparePassword){
             return res.status(500).send({
@@ -58,12 +65,12 @@ const loginController = async(req, res)=>{
             })
         }
 
-        const token = jwt.sign({userId: User._id}, process.env.JWT_SECRET,{expiresIn: '1d'})
+        const token = jwt.sign({userId: user._id}, process.env.JWT_SECRET,{expiresIn: '1d'})
         return res.status(200).send({
             success: true,
             message: "Login successful",
             token,
-            User,
+            user,
         })
     } catch (error) {
         console.log(error);
